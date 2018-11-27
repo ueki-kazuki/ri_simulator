@@ -1,0 +1,1 @@
+/Users/ueki.kazuki/.pyenv/versions/3.6.3/lib/python3.6/codecs.py

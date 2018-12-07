@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import boto3
-import json
 import pprint
 
 pp = pprint.PrettyPrinter(indent=1, width=120, compact=True)
 ec2 = boto3.client('ec2')
+
 
 class EC2ReservedInstanceMatcher:
     def __init__(self):
@@ -46,7 +46,7 @@ class EC2ReservedInstanceMatcher:
                 self.match_ec2.append(i)
                 self.apply_ri(ri)
             else:
-               self.unmatch_ec2.append(i)
+                self.unmatch_ec2.append(i)
 
         self.unmatch_ri = self.reserved_instances
 
@@ -78,46 +78,47 @@ class EC2ReservedInstanceMatcher:
                 return r
 
     def list_match_ec2(self):
-        return sorted(self.match_ec2,
-                key=lambda k: k['Platform']+k['InstanceType']+k['Name'])
+        return sorted(self.match_ec2, key=lambda k: k['Platform']+k['InstanceType']+k['Name'])
 
     def list_unmatch_ec2(self):
-        return sorted(self.unmatch_ec2,
-                key=lambda k: k['Platform']+k['InstanceType']+k['Name'])
+        return sorted(self.unmatch_ec2, key=lambda k: k['Platform']+k['InstanceType']+k['Name'])
 
     def list_unmatch_ri(self):
         return self.unmatch_ri
 
+
 def __dump_list(l):
     pp.pprint(l)
 
-def list_ri():
-    filters = [{ 'Name': 'state', 'Values': ['active'] }]
-    response = ec2.describe_reserved_instances(Filters = filters)
 
-    l = response['ReservedInstances']
-    for r in l:
+def list_ri():
+    filters = [{'Name': 'state', 'Values': ['active']}]
+    response = ec2.describe_reserved_instances(Filters=filters)
+
+    lst = response['ReservedInstances']
+    for r in lst:
         r['ProductDescription'] = r.get('ProductDescription', 'Linux/UNIX')
-    return l
+    return lst
 
 
 def list_ec2():
-    filters = [] #[{ 'Name': 'instance-state-name', 'Values': ['running']}]
-    response = ec2.describe_instances(Filters = filters)
+    filters = []
+    response = ec2.describe_instances(Filters=filters)
 
-    l = []
+    lst = []
     for r in response['Reservations']:
-        l += r['Instances']
+        lst += r['Instances']
 
-    for r in l:
+    for r in lst:
         name_tag = [x['Value'] for x in r['Tags'] if x['Key'] == 'Name']
         name = name_tag[0] if len(name_tag) else ''
         r['Name'] = name
 
         r['Platform'] = r.get('Platform', 'Linux/UNIX').capitalize()
 
-    l = sorted(l, key=lambda k: k['State']['Code']+k['LaunchTime'].timestamp())
-    return l
+    lst = sorted(lst, key=lambda k: k['State']['Code']+k['LaunchTime'].timestamp())
+    return lst
+
 
 def handler(event, context):
     ri_instances = list_ri()
@@ -150,7 +151,6 @@ def handler(event, context):
 
     print("=== 余分RI ===")
     for i in matcher.list_unmatch_ri():
-        #__dump_list(i)
         print("{Name:20s} {InstanceType:12s} {Platform:10s} {OfferingClass:12s} {Quantity:3d} {End}".format(
             Name='',
             InstanceType=i['InstanceType'],
@@ -159,6 +159,7 @@ def handler(event, context):
             Quantity=i['InstanceCount'],
             End=i['End'],
         ))
+
 
 if __name__ == "__main__":
     handler({}, {})

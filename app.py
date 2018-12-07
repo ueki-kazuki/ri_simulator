@@ -8,7 +8,7 @@ pp = pprint.PrettyPrinter(indent=1, width=120, compact=True)
 ec2 = boto3.client('ec2')
 
 
-class EC2ReservedInstanceMatcher:
+class EC2ReservedInstanceSimulator:
     def __init__(self):
         self.ec2_instances = []
         self.reserved_instances = []
@@ -35,7 +35,7 @@ class EC2ReservedInstanceMatcher:
                 break
             i += 1
 
-    def match(self):
+    def simulate(self):
         while len(self.ec2_instances) > 0:
             i = self.ec2_instances.pop(0)
 
@@ -124,13 +124,13 @@ def handler(event, context):
     ri_instances = list_ri()
     ec2_instances = list_ec2()
 
-    matcher = EC2ReservedInstanceMatcher()
-    matcher.set_ec2(ec2_instances)
-    matcher.set_ri(ri_instances)
-    matcher.match()
+    simulator = EC2ReservedInstanceSimulator()
+    simulator.set_ec2(ec2_instances)
+    simulator.set_ri(ri_instances)
+    simulator.simulate()
 
     print("=== RI適用済インスタンス ===")
-    for i in matcher.list_match_ec2():
+    for i in simulator.list_match_ec2():
         print("{Name:20s} {InstanceType:12s} {Platform:10s} {InstanceId:20s} {State}".format(
             InstanceId=i['InstanceId'],
             InstanceType=i['InstanceType'],
@@ -140,7 +140,7 @@ def handler(event, context):
         ))
 
     print("=== RI未適用インスタンス ===")
-    for i in matcher.list_unmatch_ec2():
+    for i in simulator.list_unmatch_ec2():
         print("{Name:20s} {InstanceType:12s} {Platform:10s} {InstanceId:20s} {State}".format(
             InstanceId=i['InstanceId'],
             InstanceType=i['InstanceType'],
@@ -150,7 +150,7 @@ def handler(event, context):
         ))
 
     print("=== 余分RI ===")
-    for i in matcher.list_unmatch_ri():
+    for i in simulator.list_unmatch_ri():
         print("{Name:20s} {InstanceType:12s} {Platform:10s} {OfferingClass:12s} {Quantity:3d} {End}".format(
             Name='',
             InstanceType=i['InstanceType'],

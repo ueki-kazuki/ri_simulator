@@ -45,17 +45,11 @@ class EC2ReservedInstanceSimulator:
         Subtract RI count
         When ri count to be 0 then delete the instance item.
         """
-        i = 0
-        while True:
-            ri = self.reserved_instances[i]
-            if ri is None:
-                return
+        for i, ri in enumerate(self.reserved_instances):
             if ri == match_ri:
                 ri['InstanceCount'] -= 1
                 if ri['InstanceCount'] == 0:
                     del self.reserved_instances[i]
-                break
-            i += 1
 
     def simulate(self):
         """

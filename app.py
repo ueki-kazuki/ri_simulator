@@ -78,9 +78,6 @@ class EC2ReservedInstanceSimulator:
         """
         return ri instances when target ec2 state is runnning
         """
-        if type(ri_instances) is not list:
-            ri_instances = [ri_instances]
-
         if instance['State']['Name'] == 'running':
             return ri_instances
 

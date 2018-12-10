@@ -26,8 +26,6 @@ def list_ri():
 
     # if ProductDescription is empty set as Linux/UNIX
     lst = response['ReservedInstances']
-    for r in lst:
-        r['ProductDescription'] = r.get('ProductDescription', 'Linux/UNIX')
     return lst
 
 

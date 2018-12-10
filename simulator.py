@@ -52,7 +52,12 @@ class EC2ReservedInstanceSimulator:
         """
         set ec2 reserved instances
         """
-        self.reserved_instances = reserved_instances
+        # if "Platform" is empty set "Linux/UNIX"
+        # else convert "windows" to "Windows"
+        lst = reserved_instances
+        for r in lst:
+            r['ProductDescription'] = r['ProductDescription'].capitalize() or 'Linux/UNIX'
+        self.reserved_instances = lst
 
     def apply_ri(self, match_ri):
         """

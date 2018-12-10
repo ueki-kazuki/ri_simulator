@@ -36,14 +36,15 @@ class EC2ReservedInstanceSimulator:
         # Set Name attribute from "Name" tag value
         # if Platform is empty set as Linux/UNIX
         for r in lst:
-            if 'Tags' in r and 'Name' in r['Tags']:
+            name = ''
+            if 'Tags' in r:
                 name_tag = [x['Value'] for x in r['Tags'] if x['Key'] == 'Name']
                 name = name_tag[0] if len(name_tag) else ''
-                r['Name'] = name
+            r['Name'] = name
 
             # if "Platform" is empty set "Linux/UNIX"
             # else convert "windows" to "Windows"
-            r['Platform'] = r['Platform'].capitalize() or 'Linux/UNIX'
+            r['Platform'] = r['Platform'].capitalize() if 'Platform' in r else 'Linux/UNIX'
 
         lst = sorted(lst, key=lambda k: k['State']['Code']+k['LaunchTime'].timestamp())
         self.ec2_instances = lst
@@ -56,7 +57,7 @@ class EC2ReservedInstanceSimulator:
         # else convert "windows" to "Windows"
         lst = reserved_instances
         for r in lst:
-            r['ProductDescription'] = r['ProductDescription'].capitalize() or 'Linux/UNIX'
+            r['ProductDescription'] = r['ProductDescription'].capitalize() if 'ProductDescription' in r else 'Linux/UNIX'
         self.reserved_instances = lst
 
     def apply_ri(self, match_ri):

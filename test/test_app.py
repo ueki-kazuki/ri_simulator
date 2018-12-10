@@ -115,6 +115,45 @@ class TestSimulator(unittest.TestCase):
         result = simulator.match_by_platform(ec2, ri)
         self.assertIsNone(result)
 
+    def test_list_match_ec2(self):
+        simulator = EC2ReservedInstanceSimulator()
+        result = simulator.list_match_ec2()
+        self.assertListEqual([], result)
+
+    def test_list_unmatch_ec2(self):
+        simulator = EC2ReservedInstanceSimulator()
+        result = simulator.list_unmatch_ec2()
+        self.assertListEqual([], result)
+
+    def test_list_unmatch_ri(self):
+        simulator = EC2ReservedInstanceSimulator()
+        result = simulator.list_unmatch_ri()
+        self.assertListEqual([], result)
+
+    def test_simulate(self):
+        ec2_1 = {'Name': 'Srv1', 'InstanceType': 't1.micro', 'Platform': 'Linux/UNIX', 'State': {'Name': 'running'}}
+        ec2_2 = {'Name': 'Srv2', 'InstanceType': 'r3.large', 'Platform': 'Linux/UNIX', 'State': {'Name': 'running'}}
+
+        ri1 = {'InstanceType': 't1.micro', 'ProductDescription': 'Linux/UNIX', 'InstanceCount': 2}
+
+        simulator = EC2ReservedInstanceSimulator()
+        simulator.set_ec2([ec2_1, ec2_2])
+        simulator.set_ri([ri1])
+        simulator.simulate()
+
+        match_ec2 = simulator.list_match_ec2()
+        self.assertEquals('t1.micro', match_ec2[0]['InstanceType'])
+        self.assertEquals('Linux/UNIX', match_ec2[0]['Platform'])
+
+        unmatch_ec2 = simulator.list_unmatch_ec2()
+        self.assertEquals('r3.large', unmatch_ec2[0]['InstanceType'])
+        self.assertEquals('Linux/UNIX', unmatch_ec2[0]['Platform'])
+
+        unmatch_ri = simulator.list_unmatch_ri()
+        self.assertEquals('t1.micro', unmatch_ri[0]['InstanceType'])
+        self.assertEquals('Linux/UNIX', unmatch_ri[0]['ProductDescription'])
+        self.assertEquals(1, unmatch_ri[0]['InstanceCount'])
+
 
 if __name__ == '__main__':
     unittest.main()

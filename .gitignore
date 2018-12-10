@@ -57,4 +57,3 @@ var/
 node_modules/
 .coverage
 htmlcov/
-test/

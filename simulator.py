@@ -32,7 +32,21 @@ class EC2ReservedInstanceSimulator:
         """
         set ec2 instances
         """
-        self.ec2_instances = ec2_instances
+        lst = ec2_instances
+        # Set Name attribute from "Name" tag value
+        # if Platform is empty set as Linux/UNIX
+        for r in lst:
+            if 'Tags' in r and 'Name' in r['Tags']:
+                name_tag = [x['Value'] for x in r['Tags'] if x['Key'] == 'Name']
+                name = name_tag[0] if len(name_tag) else ''
+                r['Name'] = name
+
+            # if "Platform" is empty set "Linux/UNIX"
+            # else convert "windows" to "Windows"
+            r['Platform'] = r['Platform'].capitalize() or 'Linux/UNIX'
+
+        lst = sorted(lst, key=lambda k: k['State']['Code']+k['LaunchTime'].timestamp())
+        self.ec2_instances = lst
 
     def set_ri(self, reserved_instances):
         """

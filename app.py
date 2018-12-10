@@ -42,16 +42,6 @@ def list_ec2():
     for r in response['Reservations']:
         lst += r['Instances']
 
-    # Set Name attribute from "Name" tag value
-    # if Platform is empty set as Linux/UNIX
-    for r in lst:
-        name_tag = [x['Value'] for x in r['Tags'] if x['Key'] == 'Name']
-        name = name_tag[0] if len(name_tag) else ''
-        r['Name'] = name
-
-        r['Platform'] = r.get('Platform', 'Linux/UNIX').capitalize()
-
-    lst = sorted(lst, key=lambda k: k['State']['Code']+k['LaunchTime'].timestamp())
     return lst
 
 

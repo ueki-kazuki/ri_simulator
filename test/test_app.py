@@ -1,6 +1,7 @@
 import sys,os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/../')
 
+import datetime
 import shutil
 import unittest
 from app import EC2ReservedInstanceSimulator
@@ -58,6 +59,21 @@ class TestApp(unittest.TestCase):
         self.assertEqual('t1.micro', result['InstanceType'])
 
 class TestSimulator(unittest.TestCase):
+    def __buld_instance(self, *args, **kargs):
+        i = {
+                'Name': 'Running',
+                'InstanceType': 't1.micro',
+                'Platform': '',
+                'State': {
+                    'Code': 16,
+                    'Name': 'running',
+                },
+                'LaunchTime': datetime.datetime.now(),
+            }
+        i.update(args[0])
+        return i
+
+
     def setUp(self):
         pass
 
@@ -131,8 +147,8 @@ class TestSimulator(unittest.TestCase):
         self.assertListEqual([], result)
 
     def test_simulate(self):
-        ec2_1 = {'Name': 'Srv1', 'InstanceType': 't1.micro', 'Platform': 'Linux/UNIX', 'State': {'Name': 'running'}}
-        ec2_2 = {'Name': 'Srv2', 'InstanceType': 'r3.large', 'Platform': 'Linux/UNIX', 'State': {'Name': 'running'}}
+        ec2_1 = self.__buld_instance({'Name': 'Srv1', 'InstanceType': 't1.micro'})
+        ec2_2 = self.__buld_instance({'Name': 'Srv2', 'InstanceType': 'r3.large'})
 
         ri1 = {'InstanceType': 't1.micro', 'ProductDescription': 'Linux/UNIX', 'InstanceCount': 2}
 
@@ -142,18 +158,54 @@ class TestSimulator(unittest.TestCase):
         simulator.simulate()
 
         match_ec2 = simulator.list_match_ec2()
-        self.assertEquals('t1.micro', match_ec2[0]['InstanceType'])
-        self.assertEquals('Linux/UNIX', match_ec2[0]['Platform'])
+        self.assertEqual('t1.micro', match_ec2[0]['InstanceType'])
+        self.assertEqual('Linux/UNIX', match_ec2[0]['Platform'])
 
         unmatch_ec2 = simulator.list_unmatch_ec2()
-        self.assertEquals('r3.large', unmatch_ec2[0]['InstanceType'])
-        self.assertEquals('Linux/UNIX', unmatch_ec2[0]['Platform'])
+        self.assertEqual('r3.large', unmatch_ec2[0]['InstanceType'])
+        self.assertEqual('Linux/UNIX', unmatch_ec2[0]['Platform'])
 
         unmatch_ri = simulator.list_unmatch_ri()
-        self.assertEquals('t1.micro', unmatch_ri[0]['InstanceType'])
-        self.assertEquals('Linux/UNIX', unmatch_ri[0]['ProductDescription'])
-        self.assertEquals(1, unmatch_ri[0]['InstanceCount'])
+        self.assertEqual('t1.micro', unmatch_ri[0]['InstanceType'])
+        self.assertEqual('Linux/UNIX', unmatch_ri[0]['ProductDescription'])
+        self.assertEqual(1, unmatch_ri[0]['InstanceCount'])
 
+    def test_simulate_ri_matched_to_running_instance(self):
+        ec2_1 = self.__buld_instance({'Name': 'Stopped', 'State': {'Code': 80, 'Name': 'stopped'}})
+        ec2_2 = self.__buld_instance({'Name': 'Running', 'State': {'Code': 16, 'Name': 'running'}})
+
+        ri = {'InstanceType': 't1.micro', 'ProductDescription': 'Linux/UNIX', 'InstanceCount': 1}
+
+        simulator = EC2ReservedInstanceSimulator()
+        simulator.set_ec2([ec2_1, ec2_2])
+        simulator.set_ri([ri])
+        simulator.simulate()
+
+        match_ec2 = simulator.list_match_ec2()
+        self.assertEqual('Running', match_ec2[0]['Name'])
+
+        unmatch_ec2 = simulator.list_unmatch_ec2()
+        self.assertEqual('Stopped', unmatch_ec2[0]['Name'])
+
+    def test_simulate_ri_matched_to_older_instance(self):
+        ec2_1 = self.__buld_instance({'Name': 'Newer'})
+        ec2_2 = self.__buld_instance({'Name': 'Older'})
+
+        ec2_1['LaunchTime'] = datetime.datetime.now()
+        ec2_2['LaunchTime'] = datetime.datetime.now() - datetime.timedelta(days = 1)
+
+        ri = {'InstanceType': 't1.micro', 'ProductDescription': 'Linux/UNIX', 'InstanceCount': 1}
+
+        simulator = EC2ReservedInstanceSimulator()
+        simulator.set_ec2([ec2_1, ec2_2])
+        simulator.set_ri([ri])
+        simulator.simulate()
+
+        match_ec2 = simulator.list_match_ec2()
+        self.assertEqual('Older', match_ec2[0]['Name'])
+
+        unmatch_ec2 = simulator.list_unmatch_ec2()
+        self.assertEqual('Newer', unmatch_ec2[0]['Name'])
 
 if __name__ == '__main__':
     unittest.main()
